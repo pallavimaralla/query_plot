@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { SearchIcon } from 'lucide-react';
 import { QueryParams } from '../types';
+// import { useEffect } from 'react';
+
 
 interface QueryInputProps {
   onSubmitQuery: (params: QueryParams) => void;
   fileUploaded: boolean;
   isProcessing: boolean;
+  uploadedFilename: string
 }
 
 const QueryInput: React.FC<QueryInputProps> = ({ onSubmitQuery, fileUploaded, isProcessing }) => {
@@ -56,7 +59,8 @@ const QueryInput: React.FC<QueryInputProps> = ({ onSubmitQuery, fileUploaded, is
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          
+
+
           <div className="mt-2 text-xs text-gray-500">
             <p className="mb-1">Example queries (click to use):</p>
             <div className="flex flex-wrap gap-2">
