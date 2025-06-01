@@ -23,23 +23,36 @@ Data Manipulation and Aggregation:
 
 Chart Type Determination and Code Examples:
 9.  **Infer Chart Type**: Determine the most appropriate chart type based on the user's query keywords. If the chart type is not explicitly mentioned or clearly implied, default to a bar chart for comparisons or a scatter plot for relationships between two numerical variables.
-    -   **Pie/Donut Chart (plt.pie)**: Keywords: "pie chart", "distribution", "proportion", "share", "percentage". For a "donut chart", apply \`wedgeprops={'width': 0.4}\`. Aggregate data (e.g., \`value_counts()\` or \`groupby().sum()\`) for a single categorical variable.
-        Example: \`df_counts = df['category'].value_counts(); plt.pie(df_counts, labels=df_counts.index, autopct='%1.1f%%', wedgeprops={'width': 0.4} if 'donut' in user_query.lower() else {}); plt.title('Distribution Title')\`
-    -   **Histogram (plt.hist)**: Keywords: "histogram", "frequency distribution". For a single numerical variable.
-        Example: \`plt.hist(df['numerical_column'], bins=10); plt.title('Frequency Distribution Title'); plt.xlabel('Value'); plt.ylabel('Frequency')\`
-    -   **Bar Chart (plt.bar or sns.barplot)**: Keywords: "bar chart", "compare", "average X by Y", "count of X by Y", "horizontal bar chart".
-        -   **Vertical Bar**: \`plt.bar(df_grouped.index, df_grouped.values); plt.xlabel('Category'); plt.ylabel('Value'); plt.title('Comparison Chart')\`
-        -   **Horizontal Bar**: \`plt.barh(df_grouped.index, df_grouped.values); plt.xlabel('Value'); plt.ylabel('Category'); plt.title('Comparison Chart')\`
-        -   **Stacked Bar**: Requires pivoting data. \`df_pivot = df.groupby(['category1', 'category2']).size().unstack(fill_value=0); df_pivot.plot(kind='bar', stacked=True); plt.xlabel('Category 1'); plt.ylabel('Count'); plt.title('Stacked Bar Chart')\`
-    -   **Scatter Plot (sns.scatterplot or plt.scatter)**: Keywords: "scatter plot", "correlation", "relationship between X and Y", "bubble chart". Used for two numerical variables. For "bubble chart", encode size using \`size='numerical_size_column'\`. If coloring by categorical, use \`hue='category_column'\` with \`sns.scatterplot\` and do NOT use \`c=...\` or \`palette\` without \`hue\`.
-        Example: \`sns.scatterplot(x=df['numerical_col_x'], y=df['numerical_col_y'], hue=df['category_col'], size=df['numerical_size_col'] if 'bubble' in user_query.lower() else None); plt.xlabel('X Label'); plt.ylabel('Y Label'); plt.title('Scatter Plot Title')\`
-    -   **Boxplot (sns.boxplot)**: Keywords: "boxplot", "box plot", "distribution by category". For numerical variable across categories. Always assign categorical variable to \`hue\` if \`palette\` is used.
-        Example: \`sns.boxplot(x='category_col', y='numerical_col', data=df, hue='category_col', palette='pastel', legend=False); plt.xlabel('Category'); plt.ylabel('Value'); plt.title('Boxplot Title')\`
-    -   **Violin Plot (sns.violinplot)**: Keywords: "violin plot", "violinplot", "density distribution by category". Similar to boxplots. Assign \`hue\` if \`palette\` is used.
-        Example: \`sns.violinplot(x='category_col', y='numerical_col', data=df, hue='category_col'); plt.xlabel('Category'); plt.ylabel('Value'); plt.title('Violin Plot Title')\`
-    -   **Line Plot (plt.plot or sns.lineplot)**: Keywords: "line plot", "trend", "over time", "series". For showing trends or sequences.
-        Example: \`plt.plot(df['x_col'], df['y_col']); plt.xlabel('X Label'); plt.ylabel('Y Label'); plt.title('Line Plot Title')\`
+    // Pie/Donut Chart (plt.pie): Keywords: "pie chart", "distribution", "proportion", "share", "percentage".
+// ONLY use value_counts() for a single categorical column. NEVER use groupby or aggregation for a single column's distribution.
+// For a donut chart, add wedgeprops={'width': 0.4}.
+// Example: df_counts = df['category'].value_counts(); plt.pie(df_counts, labels=df_counts.index, autopct='%1.1f%%', wedgeprops={'width': 0.4} if 'donut' in user_query.lower() else {}); plt.title('Distribution Title')
 
+// Histogram (plt.hist): Keywords: "histogram", "frequency distribution".
+// ONLY use the raw numerical column. NEVER use groupby, aggregation, or any transformation for histograms.
+// Example: plt.hist(df['numerical_column'], bins=10); plt.title('Frequency Distribution Title'); plt.xlabel('Value'); plt.ylabel('Frequency')
+
+// Bar Chart (plt.bar or sns.barplot): Keywords: "bar chart", "compare", "average X by Y", "count of X by Y", "horizontal bar chart".
+// If the query asks for a summary by category (e.g., mean, sum, count), use groupby and the correct aggregation.
+// If the query asks for simple counts of a categorical column, use value_counts().
+// Example (aggregation): df_grouped = df.groupby('category')['value'].mean(); plt.bar(df_grouped.index, df_grouped.values); plt.xlabel('Category'); plt.ylabel('Value'); plt.title('Comparison Chart')
+// Example (counts): df_counts = df['category'].value_counts(); plt.bar(df_counts.index, df_counts.values); plt.xlabel('Category'); plt.ylabel('Count'); plt.title('Count by Category')
+
+// Scatter Plot (sns.scatterplot or plt.scatter): Keywords: "scatter plot", "correlation", "relationship between X and Y", "bubble chart".
+// ALWAYS use the raw numerical columns. NEVER use groupby or aggregation unless the query explicitly requests it.
+// Example: sns.scatterplot(x='numerical_col_x', y='numerical_col_y', data=df, hue='category_col')
+
+// Boxplot (sns.boxplot): Keywords: "boxplot", "box plot", "distribution by category".
+// ALWAYS use the raw DataFrame. NEVER use groupby, aggregation, or any transformation for boxplots. The y-axis must be a numerical column, the x-axis a categorical column.
+// Example: sns.boxplot(x='category_col', y='numerical_col', data=df, hue='category_col', palette='pastel', legend=False); plt.xlabel('Category'); plt.ylabel('Value'); plt.title('Boxplot Title')
+
+// Violin Plot (sns.violinplot): Keywords: "violin plot", "violinplot", "density distribution by category".
+// ALWAYS use the raw DataFrame. NEVER use groupby, aggregation, or any transformation for violin plots. The y-axis must be a numerical column, the x-axis a categorical column.
+// Example: sns.violinplot(x='category_col', y='numerical_col', data=df, hue='category_col'); plt.xlabel('Category'); plt.ylabel('Value'); plt.title('Violin Plot Title')
+
+// Line Plot (plt.plot or sns.lineplot): Keywords: "line plot", "trend", "over time", "series".
+// If the query requests a trend by category or time, use groupby and the correct aggregation. Otherwise, use the raw data.
+// Example: plt.plot(df['x_col'], df['y_col']); plt.xlabel('X Label'); plt.ylabel('Y Label'); plt.title('Line Plot Title')
 Final Touches:
 10. Ensure the plot has appropriate labels (\`plt.xlabel\`, \`plt.ylabel\`) and a title (\`plt.title\`).
 
@@ -59,8 +72,12 @@ Only return the Python code. No explanations, no comments, no extra text.`;
         });
 
         const code = response.data.response.trim();
-        console.log('✅ Code generated by CodeLlama:\n', code);
-        return code;
+        if (!code) {
+            throw new Error('No code generated by the LLM');
+        }
+        const cleanedCode = code.replace(/plt\.show\(\)\s*;?/g, '');
+        console.log('✅ Code generated by CodeLlama:\n', cleanedCode);
+        return cleanedCode;
     } catch (err) {
         console.error('❌ Ollama LLM processing failed:', err.response?.data || err.message);
         throw new Error('LLM processing failed');

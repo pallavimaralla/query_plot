@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChartData } from '../types';
 import { PieChartIcon, BarChartIcon, LineChartIcon } from 'lucide-react';
 
@@ -9,6 +9,8 @@ interface ChartDisplayProps {
 }
 
 const ChartDisplay: React.FC<ChartDisplayProps> = ({ chartData, isProcessing, chartUrl }) => {
+    const [imgError, setImgError] = useState(false);
+
     if (isProcessing) {
         return (
             <div className="bg-[#1F2937] rounded-lg shadow-md p-6 h-full flex items-center justify-center">
@@ -26,11 +28,15 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chartData, isProcessing, ch
         );
     }
 
-    if (chartUrl) {
-        // Show backend-generated chart image if available
+    if (chartUrl && !imgError) {
         return (
             <div className="bg-[#1F2937] rounded-lg shadow-md p-6 h-full flex items-center justify-center">
-                <img src={chartUrl} alt="Generated Chart" className="w-full h-auto rounded" />
+                <img
+                    src={chartUrl}
+                    alt="Generated Chart"
+                    className="w-full h-auto rounded"
+                    onError={() => setImgError(true)}
+                />
             </div>
         );
     }
@@ -83,7 +89,7 @@ const PieChartPlaceholder: React.FC<{ data: any }> = ({ data }) => {
     return (
         <div className="w-full h-full flex flex-col items-center justify-center">
             <div className="relative w-48 h-48">
-                {data.map((_, index: number) => {
+                {data.map((_: any, index: number) => {
                     const color = colors[index % colors.length];
                     return (
                         <div
