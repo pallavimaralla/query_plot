@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
+const path = require('path');
 
 const app = express();
 
@@ -19,6 +20,9 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api', routes);
+
+app.use('/charts', express.static(path.join(__dirname, 'charts')));
+
 
 console.log('App routes and middleware initialized.');
 
