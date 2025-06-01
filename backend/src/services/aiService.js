@@ -1,20 +1,20 @@
 const axios = require('axios');
 
-/**
- * Generates Python code from a user query and dataset preview using a local Ollama model.
- * Assumes Ollama is running a model like CodeLlama on http://localhost:11434.
- * The returned code should not include pd.read_csv; the backend already loads the file.
- */
-
-module.exports.extractChartIntent = async (query, preview) => {
+module.exports.extractChartIntent = async (query, preview, normalizedColumns) => { // Accepts normalizedColumns
     const prompt = `You are a Python data visualization expert.
+Your task is to generate Python code using pandas and matplotlib.
 
-You are given a dataset preview and a user query.
-
-Assume the dataset is already loaded into a Pandas DataFrame called 'df'.
-Do NOT include any line that reads or loads a CSV file (e.g., pd.read_csv).
-
-Just generate Python code using pandas and matplotlib to fulfill the query.
+Important instructions:
+1. The dataset is already loaded into a Pandas DataFrame called 'df'.
+2. The original column names from the CSV have been transformed into **snake_case** (all lowercase, words separated by underscores).
+   The ONLY available columns in the DataFrame are:
+   ${normalizedColumns.join(', ')}
+   You MUST use these exact normalized column names when referencing columns in 'df'. For example, if the original column was "PetalLength", you must use "petal_length". If it was "Sepal Width", you must use "sepal_width".
+3. Do NOT include any code that reads or loads a CSV file (e.g., pd.read_csv).
+4. Do NOT include any code for saving or showing the plot (e.g., plt.savefig(), plt.show()). The plot will be saved by the environment automatically.
+5. When a query asks for an aggregation (like "average", "mean", "sum", "count") *by* a specific category (e.g., "by species", "per month", "for each product"), you MUST perform a Pandas **groupby()** operation first, and then apply the aggregation function. For example, if the query involves "average petal length by species", and the normalized columns are 'species' and 'petal_length', the code should use:
+   df_grouped = df.groupby('species')['petal_length'].mean()
+   plt.bar(df_grouped.index, df_grouped.values)
 
 Dataset Preview:
 ${preview}
@@ -22,7 +22,7 @@ ${preview}
 User Query:
 ${query}
 
-Only return the Python code. No explanations, no comments.`;
+Only return the Python code. No explanations, no comments, no extra text.`;
 
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {

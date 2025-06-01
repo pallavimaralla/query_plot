@@ -8,16 +8,23 @@ import { DatabaseIcon } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const [file, setFile] = useState<FileDetails | null>(null);
+  const [backendFileName, setBackendFileName] = useState<string | null>(null); // New state to store the backend filename
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [downloadUrl, setDownloadUrl] = useState<string | undefined>(undefined);
 
-  const handleFileUploaded = (fileDetails: FileDetails | null) => {
+  const handleFileUploaded = (fileDetails: FileDetails | null, uploadedBackendFilename?: string) => {
     setFile(fileDetails);
+    setBackendFileName(uploadedBackendFilename || null); // Store the backend filename returned by the upload API
     setDownloadUrl(undefined);
   };
 
   const handleSubmitQuery = async (params: QueryParams) => {
-    if (!file) return;
+    // Use backendFileName if available, otherwise fall back to original file.name (should be available after upload)
+    const currentFileName = backendFileName || file?.name;
+    if (!currentFileName) {
+      console.error('No file selected or uploaded backend filename is missing.');
+      return; // Ensure a filename is available before proceeding
+    }
 
     setIsProcessing(true);
     setDownloadUrl(undefined);
@@ -29,8 +36,8 @@ const Dashboard: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: params.query,
-          preview: '...', // Optional preview text
-          filename: file.name
+          preview: '...', // Optional preview text, still hardcoded.
+          filename: currentFileName // Use the actual filename saved on the backend
         })
       });
 
@@ -41,7 +48,7 @@ const Dashboard: React.FC = () => {
       const runRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, code })
+        body: JSON.stringify({ filename: currentFileName, code }) // Use the actual filename saved on the backend
       });
 
       const { key } = await runRes.json();
@@ -72,8 +79,8 @@ const Dashboard: React.FC = () => {
               <QueryInput
                   onSubmitQuery={handleSubmitQuery}
                   fileUploaded={!!file}
+                  uploadedFilename={file?.name || ''} // This displays the original name, which is fine for UI.
                   isProcessing={isProcessing}
-                  uploadedFilename={file?.name || ''}
               />
             </div>
 
