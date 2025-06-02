@@ -1,30 +1,47 @@
-const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const { saveMetadata } = require('../services/postgresService');
 
+// Store uploaded files with a timestamped filename
 const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        console.log('📥 Incoming file:', file.originalname);
-        cb(null, `${Date.now()}-${file.originalname}`);
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, '../../uploads'));
+    },
+    filename: function (req, file, cb) {
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname);
+        const base = path.basename(file.originalname, ext);
+        const newFilename = `${timestamp}-${base}${ext}`;
+        cb(null, newFilename);
     }
 });
-const upload = multer({ storage }).single('file');
+
+const upload = multer({ storage: storage }).single('file');
 
 module.exports = (req, res) => {
-    upload(req, res, async (err) => {
+    upload(req, res, async function (err) {
         if (err) {
-            console.error('❌ Upload error:', err);
-            return res.status(500).json({ error: 'Upload failed' });
+            console.error('❌ Multer error:', err);
+            return res.status(500).json({ error: 'File upload failed.' });
         }
 
-        console.log('✅ File uploaded successfully:', req.file?.filename);
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded.' });
+        }
+
+        const file = req.file;
+        console.log('📥 Incoming file:', file.originalname);
+        console.log('✅ File uploaded successfully:', file.filename);
+
         try {
-            await saveMetadata(req.file);
-        } catch (metaErr) {
-            console.error('❌ Error saving metadata:', metaErr);
+            // Save metadata using the original filename
+            await saveMetadata(file.filename, file.originalname);
+        } catch (error) {
+            console.error('❌ Error saving metadata:', error);
         }
 
-        res.status(200).json({ filename: req.file.filename });
+        // Return the timestamped filename to the frontend
+        res.status(200).json({ filename: file.filename, originalFilename: file.originalname});
     });
 };

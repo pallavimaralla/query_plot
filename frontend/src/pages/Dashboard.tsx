@@ -13,6 +13,7 @@ const Dashboard: React.FC = () => {
   const [downloadUrl, setDownloadUrl] = useState<string | undefined>(undefined);
   const [chartData, setChartData] = useState<any>(null);
   const [chartUrl, setChartUrl] = useState<string | null>(null);
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
 
   const handleFileUploaded = (fileDetails: FileDetails | null, uploadedBackendFilename?: string) => {
     setFile(fileDetails);
@@ -20,14 +21,29 @@ const Dashboard: React.FC = () => {
     setDownloadUrl(undefined);
     setChartData(null);
     setChartUrl(null);
+
+    if (fileDetails?.originalName) {
+      fetch(`${import.meta.env.VITE_API_BASE_URL}/recent-queries?filename=${fileDetails.originalName}`)
+          .then((res) => res.json())
+          .then((data) => setRecentQueries(data.recentQueries || []))
+          .catch((err) => {
+            console.error('❌ Failed to fetch recent queries:', err);
+            setRecentQueries([]);
+          });
+    } else {
+      setRecentQueries([]);
+    }
   };
 
   const handleSubmitQuery = async (params: QueryParams) => {
     const currentFileName = backendFileName || file?.name;
-    if (!currentFileName) {
-      console.error('No file selected or uploaded backend filename is missing.');
+    const originalFileName = file?.originalName;
+
+    if (!currentFileName || !originalFileName) {
+      console.error('Missing file info for query submission.');
       return;
     }
+
 
     setIsProcessing(true);
     setDownloadUrl(undefined);
@@ -41,8 +57,9 @@ const Dashboard: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: params.query,
-          preview: '...',
-          filename: currentFileName
+          preview: false,
+          filename: currentFileName,
+          originalFilename: originalFileName
         })
       });
 
@@ -77,6 +94,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
+
   return (
       <div className="min-h-screen bg-[#111827]">
         <header className="bg-[#1F2937] shadow-lg border-b border-gray-800">
@@ -95,8 +113,9 @@ const Dashboard: React.FC = () => {
               <QueryInput
                   onSubmitQuery={handleSubmitQuery}
                   fileUploaded={!!file}
-                  uploadedFilename={file?.name || ''}
+                  uploadedFilename={backendFileName}
                   isProcessing={isProcessing}
+                  recentQueries={recentQueries}
               />
             </div>
 
@@ -114,7 +133,7 @@ const Dashboard: React.FC = () => {
         <footer className="bg-[#1F2937] border-t border-gray-800 mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <p className="text-center text-sm text-gray-400">
-              Data Analysis Platform &copy; {new Date().getFullYear()}
+              Query Plot &copy; {new Date().getFullYear()}
             </p>
           </div>
         </footer>

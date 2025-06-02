@@ -52,6 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
       name: file.name,
       size: file.size,
       type: file.type,
+      originalName: file.name,
     };
 
     setFile(fileDetails);

@@ -64,6 +64,8 @@ ${query}
 
 Only return the Python code. No explanations, no comments, no extra text.`;
 
+
+
     try {
         const response = await axios.post('http://localhost:11434/api/generate', {
             model: 'codellama',
