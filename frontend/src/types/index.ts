@@ -2,6 +2,7 @@ export interface FileDetails {
   name: string;
   size: number;
   type?: string;
+  originalName: string;
 }
 
 export interface QueryParams {

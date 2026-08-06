@@ -178,7 +178,7 @@ interface QueryInputProps {
   onSubmitQuery: (params: QueryParams) => void;
   fileUploaded: boolean;
   isProcessing: boolean;
-  uploadedFilename: string;
+  uploadedFilename: string | null;
   recentQueries: string[];
 }
 
