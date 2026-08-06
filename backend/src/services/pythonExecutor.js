@@ -9,7 +9,7 @@ module.exports.runPython = (filename, code) => {
 
         let dfJsonString = '';
         try {
-            const readCsvProcess = spawn('python3', [path.join(__dirname, '../../util/read_csv_to_json.py'), fullCsvFilePath]);
+            const readCsvProcess = spawn('/opt/homebrew/bin/python3', [path.join(__dirname, '../../util/read_csv_to_json.py'), fullCsvFilePath]);
             let readCsvOutput = '';
             let readCsvError = '';
 
@@ -75,7 +75,7 @@ module.exports.runPython = (filename, code) => {
             return reject('Failed to create chart directory');
         }
 
-        const py = spawn('python3', [
+        const py = spawn('/opt/homebrew/bin/python3', [
             path.join(__dirname, '../../python/sandbox_processor.py'),
             dfJsonString,
             chartSavePathAbsolute

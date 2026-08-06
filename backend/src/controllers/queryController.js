@@ -27,9 +27,10 @@ module.exports = async (req, res) => {
 
     let normalizedColumns = [];
     let originalColumns = [];
+    let dfData = null;
 
     try {
-        const readCsvProcess = spawn('python3', [path.join(__dirname, '../../util/read_csv_to_json.py'), fullCsvFilePath]);
+        const readCsvProcess = spawn('/opt/homebrew/bin/python3', [path.join(__dirname, '../../util/read_csv_to_json.py'), fullCsvFilePath]);
         let readCsvOutput = '';
         let readCsvError = '';
 
@@ -51,7 +52,7 @@ module.exports = async (req, res) => {
                         return reject(`Failed to read CSV: ${readCsvError}`);
                     }
                 }
-                const dfData = JSON.parse(readCsvOutput.trim());
+                dfData = JSON.parse(readCsvOutput.trim());
                 originalColumns = dfData.columns;
                 normalizedColumns = originalColumns.map(col => camelToSnakeCase(col));
                 resolve();
@@ -63,7 +64,23 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const pythonCode = await extractChartIntent(query, preview, normalizedColumns);
+        // Generate a detailed preview with sample data
+        const sampleRows = dfData.data.slice(0, 3);
+
+        const dataPreview = `
+Dataset Information:
+- Total rows: ${dfData.data.length}
+- Columns (snake_case): ${normalizedColumns.join(', ')}
+
+Sample Data:
+${normalizedColumns.map((col, idx) => col).join(' | ')}
+${sampleRows.map(row => normalizedColumns.map((_, idx) => row[idx]).join(' | ')).join('\n')}
+
+Column Mapping (Original → Snake Case):
+${originalColumns.map((orig, idx) => `${orig} → ${normalizedColumns[idx]}`).join('\n')}
+`;
+
+        const pythonCode = await extractChartIntent(query, dataPreview, normalizedColumns);
         console.log('✅ Generated Python code:\n', pythonCode);
 
         // Save query for original (non-timestamped) file name
