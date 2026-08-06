@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-../node_modules
+node_modules/
 dist
 dist-ssr
 *.local
@@ -15,14 +15,26 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Env files
 frontend/.env
 backend/.env
-backend/.env
-.agent/
+
+# Redis dump
+dump.rdb
+
+# Generated/user data
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/charts/*
+!backend/charts/.gitkeep
+
+# doc-agent runtime state (regenerated per commit, not source of truth)
+.agent/.vite/
