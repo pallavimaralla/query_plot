@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>doc-agent · query_plot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --border: #e2e4e9; --text: #1a1d23; --muted: #6b7280;
+    --accent: #4f46e5; --idle: #9ca3af; --pending: #d97706; --running: #2563eb; --complete: #16a34a; --error: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1115; --panel: #171a21; --border: #2a2e37; --text: #e7e9ee; --muted: #9099a8; --accent: #818cf8; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 32px 20px 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 6px; }
+  h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+  .live-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; padding-top: 4px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--idle); }
+  .live-pill.on .live-dot { background: var(--complete); box-shadow: 0 0 0 3px color-mix(in srgb, var(--complete) 25%, transparent); }
+  .live-pill.off .live-dot { background: var(--error); }
+
+  .explainer {
+    margin: 18px 0 24px;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .explainer strong { color: var(--text); }
+  .explainer code { background: var(--bg); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; font-size: 12px; color: var(--accent); }
+
+  .commit-line {
+    padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .commit-line strong { color: var(--text); font-weight: 600; }
+  .commit-sha { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 5px; }
+
+  .empty-banner {
+    padding: 28px 20px; text-align: center; background: var(--panel); border: 1px dashed var(--border);
+    border-radius: 12px; color: var(--muted); font-size: 13.5px; line-height: 1.7; margin-bottom: 24px;
+  }
+  .empty-banner strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 6px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); margin-bottom: 20px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; margin-bottom: 36px; }
+  .arrow { color: var(--border); font-size: 18px; line-height: 1; margin: 4px 0; }
+  .row { display: flex; gap: 14px; width: 100%; justify-content: center; align-items: stretch; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+    width: 300px; transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  .card.wide { width: 100%; max-width: 620px; }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .card-title { display: flex; align-items: center; gap: 8px; }
+  .step-badge {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border);
+    font-size: 11px; font-weight: 700; color: var(--muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .card-label { font-weight: 600; font-size: 14.5px; }
+  .card-desc { font-size: 12px; color: var(--muted); margin: 3px 0 0 30px; line-height: 1.5; }
+
+  .pill {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 999px; color: #fff; white-space: nowrap; flex-shrink: 0;
+  }
+  .pill.idle { background: var(--idle); }
+  .pill.pending { background: var(--pending); }
+  .pill.running { background: var(--running); }
+  .pill.complete { background: var(--complete); }
+  .pill.error { background: var(--error); }
+
+  .card.running { border-color: var(--running); box-shadow: 0 0 0 3px color-mix(in srgb, var(--running) 16%, transparent); }
+  .card.complete { border-color: var(--complete); }
+  .card.error { border-color: var(--error); }
+  .running .pill.running { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .card-hint { margin: 10px 0 0 30px; font-size: 12px; padding: 7px 10px; border-radius: 7px; background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+  .card-hint code { color: var(--accent); font-weight: 600; }
+  .card-detail {
+    margin: 8px 0 0 30px; font-size: 12px; color: var(--muted); white-space: pre-wrap; line-height: 1.5;
+    max-height: 90px; overflow-y: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .card-time { margin: 8px 0 0 30px; font-size: 11px; color: var(--muted); opacity: 0.75; }
+
+  .logs { margin-top: 8px; }
+  .logs h2 { font-size: 14px; margin: 0 0 10px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .tab { padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .log-panel {
+    display: none; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.6;
+    white-space: pre-wrap; max-height: 320px; overflow-y: auto;
+  }
+  .log-panel.active { display: block; }
+
+  footer { margin-top: 30px; font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.8; }
+  footer code { background: var(--panel); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>doc-agent workflow</h1>
+        <div class="subtitle">query_plot · what happens after every commit</div>
+      </div>
+      <div class="live-pill off" id="livePill"><span class="live-dot"></span><span id="liveText">Connecting…</span></div>
+    </header>
+
+    <div class="explainer">
+      <strong>How this works:</strong> every <code>git commit</code> triggers <code>.githooks/post-commit</code>,
+      which resets the 4 steps below. Steps 2 and 3 don't run automatically — Copilot Chat can't be
+      triggered headlessly, so you run <code>/dev-docs</code> and <code>/user-docs</code> yourself, then
+      <code>/gather-changelog</code> whenever you want to bundle things up. This page just shows you where
+      things stand, live.
+    </div>
+
+    <div class="commit-line">
+      <span>Last commit: <strong id="commitMsg">—</strong></span>
+      <span><span class="commit-sha" id="commitSha">—</span> · updated <span id="updatedAt">—</span></span>
+    </div>
+
+    <div class="empty-banner" id="emptyBanner" style="display:none;">
+      <strong>Nothing tracked yet</strong>
+      Make a commit in this repo (with the <code>.githooks/post-commit</code> hook installed) to kick off the workflow.
+    </div>
+
+    <div class="legend">
+      <span><i style="background:var(--idle)"></i>Idle — not started</span>
+      <span><i style="background:var(--pending)"></i>Pending — waiting on you</span>
+      <span><i style="background:var(--running)"></i>Running — Copilot working</span>
+      <span><i style="background:var(--complete)"></i>Complete</span>
+      <span><i style="background:var(--error)"></i>Error</span>
+    </div>
+
+    <div class="flow" id="flow">
+      <div class="row"><div class="card wide" data-phase="discover" data-step="1"></div></div>
+      <div class="arrow">↓</div>
+      <div class="row">
+        <div class="card" data-phase="dev-docs" data-step="2a"></div>
+        <div class="card" data-phase="user-docs" data-step="2b"></div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="row"><div class="card wide" data-phase="gather" data-step="3"></div></div>
+    </div>
+
+    <div class="logs">
+      <h2>Generated documentation</h2>
+      <div class="tabs">
+        <div class="tab active" data-tab="dev">Developer log</div>
+        <div class="tab" data-tab="user">User log</div>
+      </div>
+      <div class="log-panel active" id="log-dev"></div>
+      <div class="log-panel" id="log-user"></div>
+    </div>
+
+    <footer>
+      Run <code>/dev-docs</code>, <code>/user-docs</code>, <code>/gather-changelog</code> in Copilot Chat (Agent mode) to advance each step.
+    </footer>
+  </div>
+
+<script>
+  const DESCRIPTIONS = {
+    'discover': 'Reads the diff of your last commit — files touched, lines added/removed. Runs automatically.',
+    'dev-docs': 'Copilot writes a technical entry for engineers: what changed, why, implementation notes.',
+    'user-docs': 'Copilot writes a plain-language entry: what changed for someone using the app.',
+    'gather': 'Bundles ungathered dev-log entries into docs/CHANGELOG.md by related area.',
+  };
+  const HOW_TO = {
+    'dev-docs': 'Run <code>/dev-docs</code> in Copilot Chat',
+    'user-docs': 'Run <code>/user-docs</code> in Copilot Chat',
+    'gather': 'Run <code>/gather-changelog</code> in Copilot Chat',
+  };
+
+  const cardEls = Object.fromEntries([...document.querySelectorAll('[data-phase]')].map(el => [el.dataset.phase, el]));
+
+  function relTime(iso) {
+    if (!iso) return '—';
+    const diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diffSec < 5) return 'just now';
+    if (diffSec < 60) return diffSec + 's ago';
+    if (diffSec < 3600) return Math.floor(diffSec / 60) + 'm ago';
+    return Math.floor(diffSec / 3600) + 'h ago';
+  }
+
+  function renderCard(el, phase) {
+    const step = el.dataset.step;
+    el.className = 'card' + (el.classList.contains('wide') ? ' wide' : '') + ' ' + phase.status;
+    const hint = (phase.status === 'idle' || phase.status === 'pending') && HOW_TO[phase.id]
+      ? `<div class="card-hint">→ ${HOW_TO[phase.id]}</div>` : '';
+    const detail = phase.detail
+      ? `<div class="card-detail">${phase.detail.replace(/</g, '&lt;')}</div>` : '';
+    el.innerHTML = `
+      <div class="card-head">
+        <div class="card-title"><span class="step-badge">${step}</span><span class="card-label">${phase.label}</span></div>
+        <span class="pill ${phase.status}">${phase.status}</span>
+      </div>
+      <div class="card-desc">${DESCRIPTIONS[phase.id] || ''}</div>
+      ${hint}
+      ${detail}
+      <div class="card-time">${phase.status !== 'idle' ? 'updated ' + relTime(phase._updatedAt) : ''}</div>
+    `;
+  }
+
+  async function pollSession() {
+    try {
+      const res = await fetch('/api/session', { cache: 'no-store' });
+      const session = await res.json();
+      document.getElementById('livePill').className = 'live-pill on';
+      document.getElementById('liveText').textContent = 'Live';
+
+      document.getElementById('emptyBanner').style.display = session.hasSession ? 'none' : 'block';
+      document.getElementById('commitMsg').textContent = session.commitMessage || '—';
+      document.getElementById('commitSha').textContent = session.commit ? session.commit.slice(0, 7) : '—';
+      document.getElementById('updatedAt').textContent = relTime(session.updatedAt);
+
+      for (const phase of session.phases) {
+        phase._updatedAt = session.updatedAt;
+        if (cardEls[phase.id]) renderCard(cardEls[phase.id], phase);
+      }
+    } catch (e) {
+      document.getElementById('livePill').className = 'live-pill off';
+      document.getElementById('liveText').textContent = 'Disconnected — is node dashboard/server.js running?';
+    }
+  }
+
+  async function pollLogs() {
+    try {
+      const res = await fetch('/api/logs', { cache: 'no-store' });
+      const { devLog, userLog } = await res.json();
+      document.getElementById('log-dev').textContent = devLog;
+      document.getElementById('log-user').textContent = userLog;
+    } catch (e) {}
+  }
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.log-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('log-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  pollSession(); pollLogs();
+  setInterval(pollSession, 1500);
+  setInterval(pollLogs, 3000);
+</script>
+</body>
+</html>
