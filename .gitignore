@@ -25,3 +25,4 @@ dist-ssr
 frontend/.env
 backend/.env
 backend/.env
+.agent/
