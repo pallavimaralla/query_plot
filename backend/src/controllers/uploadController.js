@@ -36,7 +36,8 @@ module.exports = (req, res) => {
 
         try {
             // Save metadata using the original filename
-            await saveMetadata(file.filename, file.originalname);
+            // await saveMetadata(file.filename, file.originalname);
+            await saveMetadata(file);
         } catch (error) {
             console.error('❌ Error saving metadata:', error);
         }
